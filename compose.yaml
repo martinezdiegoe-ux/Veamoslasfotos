@@ -1,0 +1,13 @@
+services:
+  fotos:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file: .env
+    environment:
+      DATA_DIR: /app/data
+    volumes:
+      - fotos-data:/app/data
+volumes:
+  fotos-data:
