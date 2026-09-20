@@ -10,9 +10,18 @@ Aplicación de fotos para el festejo: invitados suben desde el QR, la organizaci
 - `/qr`: tarjeta imprimible y descarga PNG del QR.
 - Actualizaciones SSE con reconexión; fotos JPEG optimizadas y SQLite persistentes. Reacciones: una por identificador de navegador/foto, reemplazable. No identifica personas ni impide reacciones desde varios dispositivos.
 
-## Puesta en marcha
+## GitHub Pages y Supabase
 
-Requiere Node.js 24 o Docker. **GitHub Pages no ejecuta este servidor**. El repositorio contiene la aplicación completa, pero subir el código no la publica ni activa el QR para invitados.
+La versión gratuita se publica desde `index.html` en la raíz. Incluye diseño, QR y proyección; la carga queda desactivada mientras se termina de configurar Supabase. Ver [configuración y estado](SUPABASE-SETUP.md).
+
+```bash
+npm ci
+npm run build:pages
+```
+
+## Puesta en marcha del servidor Node alternativo
+
+Requiere Node.js 24 o Docker. GitHub Pages usa la versión estática descrita arriba. Esta alternativa Node requiere un servidor propio.
 
 ```sh
 npm ci
