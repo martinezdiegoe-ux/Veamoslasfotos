@@ -5,6 +5,8 @@ const guestUrl=new URL('./',location.href).href;
 const qrUrl=await QRCode.toDataURL(guestUrl,{width:600,margin:3,errorCorrectionLevel:'M',color:{dark:'#362b20',light:'#ffffff'}});
 const ready=Boolean(cloudConfig.publishableKey);
 const client=ready?createClient(cloudConfig.url,cloudConfig.publishableKey):null;
+let recovering=new URLSearchParams(location.hash.slice(1)).get('type')==='recovery';
+if(client)client.auth.onAuthStateChange(event=>{if(event==='PASSWORD_RECOVERY')recovering=true;});
 const unavailable='El álbum todavía está en preparación. Pronto vas a poder compartir tus fotos.';
 const defaults={open:false,moderation:true,seconds:8,guestUrl,qrUrl,setupPending:!ready};
 const unwrap=({data,error})=>{if(error)throw Error(error.message);return data;};
@@ -45,10 +47,28 @@ async function compress(file){
 }
 window.vfBackend={
   cloud:true,qrUrl,
+  recoveryRequested:recovering||new URLSearchParams(location.search).has('recuperar'),
+  async recoveryReady(){
+    if(!client)return false;
+    const {data,error}=await client.auth.getSession();
+    if(error)throw Error('El enlace venció o no es válido. Solicitá otro correo de recuperación.');
+    return recovering&&Boolean(data.session);
+  },
   async api(url,options={}){
     if(url==='/api/config')return ready?{...defaults,...unwrap(await client.from('vf_settings').select('open,moderation,seconds').eq('id',1).single()),setupPending:false}:defaults;
     if(!ready){if(url==='/api/photos')return [];throw Error(unavailable);}
     const body=options.body?JSON.parse(options.body):{};
+    if(url==='/api/recover'){
+      const redirect=new URL(guestUrl);redirect.search='?vista=admin&recuperar=1';
+      unwrap(await client.auth.resetPasswordForEmail(String(body.email).trim(),{redirectTo:redirect.href}));
+      return {ok:true};
+    }
+    if(url==='/api/reset-password'){
+      if(!await this.recoveryReady())throw Error('El enlace venció o no es válido. Solicitá otro correo de recuperación.');
+      if(typeof body.password!=='string'||body.password.length<8)throw Error('Usá al menos 8 caracteres.');
+      unwrap(await client.auth.updateUser({password:body.password}));
+      recovering=false;unwrap(await client.auth.signOut());return {ok:true};
+    }
     if(url==='/api/photos')return photos(false);
     if(url==='/api/admin/photos')return photos(true);
     if(url==='/api/login'){
