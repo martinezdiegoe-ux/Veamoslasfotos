@@ -85,11 +85,13 @@ window.vfBackend={
     if(photo){
       await requireAdmin();
       if(options.method==='DELETE'){
-        // Hide first; a failed storage removal leaves the record available for retry.
-        unwrap(await client.from('vf_photos').update({status:'hidden'}).eq('id',photo[1]));
         const row=unwrap(await client.from('vf_photos').select('path').eq('id',photo[1]).single());
-        unwrap(await client.storage.from('birthday-photos').remove([row.path]));
-        unwrap(await client.from('vf_photos').delete().eq('id',photo[1]));
+        // Remove the album entry first: Storage must not block removing a photo from the screens.
+        const removed=unwrap(await client.from('vf_photos').delete().eq('id',photo[1]).select('id'));
+        if(removed.length!==1)throw Error('No se pudo eliminar la foto. Volvé a ingresar al panel e intentá nuevamente.');
+        signed.delete(row.path);
+        const cleanup=await client.storage.from('birthday-photos').remove([row.path]);
+        return {ok:true,warning:cleanup.error?'Foto eliminada del álbum. Quedó pendiente borrar el archivo del almacenamiento.':null};
       }else unwrap(await client.from('vf_photos').update({status:body.status}).eq('id',photo[1]));
       return {ok:true};
     }
