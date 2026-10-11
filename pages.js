@@ -116,7 +116,7 @@ window.vfBackend={
       if(busy||document.hidden)return;busy=true;
       try{await config();await refresh();status('Actualización automática',false);}catch{status('Sin conexión · reintentando',true);}finally{busy=false;}
     };
-    const interval=setInterval(tick,8000);document.addEventListener('visibilitychange',tick);
+    const interval=setInterval(tick,new URLSearchParams(location.search).get('vista')==='pantalla'?3000:8000);document.addEventListener('visibilitychange',tick);
     window.addEventListener('pagehide',()=>clearInterval(interval),{once:true});tick();
   }
 };
